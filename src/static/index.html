@@ -62,17 +62,27 @@
             gap: 40px;
             flex-wrap: wrap;
         }
-        .accounts-section {
+        .accounts-section, .tips-section {
             flex: 2;
             min-width: 300px;
-        }
-        .selected-section {
-            flex: 1;
-            min-width: 250px;
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .selected-section {
+            flex: 1;
+            min-width: 250px;
+            padding: 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #007bff, #40c4ff);
+            color: white;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .selected-section:hover {
+            transform: scale(1.02);
         }
         .account {
             border: 1px solid #ddd;
@@ -113,6 +123,14 @@
             border-radius: 6px;
             resize: vertical;
         }
+        .remark-input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         .radio-container {
             display: flex;
             align-items: center;
@@ -139,10 +157,12 @@
             background: linear-gradient(135deg, #40a9ff, #007bff);
         }
         .help-link {
-            font-size: 12px;
-            margin-left: 10px;
             color: #007bff;
             text-decoration: none;
+            font-size: 16px;
+        }
+        .help-link:hover {
+            text-decoration: underline;
         }
         .help-panel {
             position: fixed;
@@ -162,13 +182,13 @@
             to { opacity: 1; }
         }
         .help-content {
-            background-color: white;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #ffffff, #f0f7ff);
+            border-radius: 12px;
             width: 80%;
             max-width: 600px;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
             animation: slideIn 0.3s ease;
         }
         @keyframes slideIn {
@@ -176,40 +196,45 @@
             to { transform: translateY(0); opacity: 1; }
         }
         .help-header {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
+            padding: 20px;
+            border-bottom: 1px solid #e0e7ff;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #007bff;
+            color: white;
+            border-radius: 12px 12px 0 0;
         }
         .help-header h3 {
             margin: 0;
-            color: #007bff;
+            font-size: 20px;
         }
         .close-btn {
             background: none;
             border: none;
             font-size: 28px;
             cursor: pointer;
-            color: #666;
+            color: #fff;
         }
         .help-body {
-            padding: 20px;
+            padding: 25px;
         }
         .help-body ol {
             padding-left: 25px;
         }
         .help-body li {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            line-height: 1.5;
         }
         .image-container {
-            margin: 15px 0;
+            margin: 20px 0;
             text-align: center;
         }
         .help-image {
             max-width: 100%;
             border: 1px solid #ddd;
             border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
         }
         #password-section {
             text-align: center;
@@ -271,6 +296,10 @@
                     <h2>当前选中的账户</h2>
                     <div id="selected-account-info">未选择任何账户</div>
                 </div>
+                <div class="tips-section">
+                    <h2>提示</h2>
+                    <p><a href="#" class="help-link" onclick="openHelpPanel(event)">如何获取Cookie?</a></p>
+                </div>
             </div>
         </main>
 
@@ -304,7 +333,6 @@
     </div>
 
     <script>
-        // Function to get cookie value
         function getCookie(name) {
             var cookie = document.cookie;
             var parts = cookie.split(';');
@@ -317,7 +345,6 @@
             return null;
         }
 
-        // Function to set cookie
         function setCookie(name, value, expirationDays) {
             var expirationDate = new Date();
             expirationDate.setDate(expirationDate.getDate() + expirationDays);
@@ -325,7 +352,6 @@
             document.cookie = cookieString;
         }
 
-        // Check if password is verified
         window.onload = function() {
             var passwordVerified = getCookie('passwordVerified');
             if (passwordVerified == 'true') {
@@ -393,11 +419,24 @@
 
                 const label = document.createElement('label');
                 label.htmlFor = `account-${account.id}`;
-                label.textContent = `账户 ${index + 1}`;
-                label.innerHTML = `账户 ${index + 1} <a href="#" class="help-link" onclick="openHelpPanel(event)">如何获取cookie?</a>`;
+                label.textContent = account.remark || `账户 ${index + 1}`;
 
                 radioContainer.appendChild(radio);
                 radioContainer.appendChild(label);
+
+                const remarkInput = document.createElement('input');
+                remarkInput.type = 'text';
+                remarkInput.className = 'remark-input';
+                remarkInput.placeholder = '输入备注名称...';
+                remarkInput.value = account.remark || '';
+                remarkInput.addEventListener('input', () => {
+                    account.remark = remarkInput.value;
+                    label.textContent = account.remark || `账户 ${index + 1}`;
+                    saveAccounts();
+                    if (account.id === selectedAccountId) {
+                        updateSelectedAccountDiv();
+                    }
+                });
 
                 const textarea = document.createElement('textarea');
                 textarea.placeholder = '在此粘贴Cookie字符串...';
@@ -408,7 +447,6 @@
                     saveAccounts();
                     if (account.id === selectedAccountId) {
                         document.cookie = `grok_cookie=${encodeURIComponent(account.cookie)}; path=/; max-age=31536000`;
-                        updateSelectedAccountDiv();
                     }
                 });
 
@@ -418,6 +456,7 @@
                 deleteBtn.addEventListener('click', () => deleteAccount(account.id));
 
                 accountDiv.appendChild(radioContainer);
+                accountDiv.appendChild(remarkInput);
                 accountDiv.appendChild(textarea);
                 accountDiv.appendChild(deleteBtn);
 
@@ -427,7 +466,7 @@
 
         function addAccount() {
             const newId = Date.now().toString();
-            accounts.push({ id: newId, cookie: '' });
+            accounts.push({ id: newId, cookie: '', remark: '' });
             saveAccounts();
             renderAccounts();
         }
@@ -468,10 +507,7 @@
                 return;
             }
             const accountIndex = accounts.findIndex(account => account.id === selectedAccountId);
-            infoDiv.innerHTML = `
-                <p><strong>当前选中：</strong> 账户 ${accountIndex + 1}</p>
-                <p><strong>Cookie：</strong> ${selectedAccount.cookie ? selectedAccount.cookie.substring(0, 50) + '...' : '无'}</p>
-            `;
+            infoDiv.textContent = selectedAccount.remark || `账户 ${accountIndex + 1}`;
         }
 
         function openHelpPanel(event) {
