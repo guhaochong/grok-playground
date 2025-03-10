@@ -62,7 +62,7 @@
             gap: 40px;
             flex-wrap: wrap;
         }
-        .accounts-section, .tips-section {
+        .accounts-section {
             flex: 2;
             min-width: 300px;
             background: white;
@@ -90,7 +90,6 @@
             margin-bottom: 20px;
             border-radius: 8px;
             background-color: #fff;
-            position: relative;
             transition: transform 0.2s, box-shadow 0.3s;
         }
         .account:hover {
@@ -100,36 +99,6 @@
         .account.selected {
             border-color: #007bff;
             background-color: #e6f7ff;
-        }
-        .delete-btn {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            background: #ff4d4f;
-            padding: 6px 12px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        .delete-btn:hover {
-            background: #d9363e;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin: 15px 0 0;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            resize: vertical;
-        }
-        .remark-input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
         }
         .radio-container {
             display: flex;
@@ -268,18 +237,18 @@
     </style>
 </head>
 <body>
-    <div id="password-section" style="display: none;">
+    <div id="password-section">
         <h2>请输入密码</h2>
         <input type="password" id="password-input" placeholder="请输入密码">
         <button id="submit-password">提交</button>
         <p id="error-message" style="display: none;">密码错误</p>
     </div>
 
-    <div id="main-content-section">
+    <div id="main-content-section" style="display: none;">
         <header>
             <div class="container">
                 <h1>GrokPlayground</h1>
-                <a href="#" id="grok-link" class="grok-link" target="_blank">
+                <a href="/grok" id="grok-link" class="grok-link" target="_blank">
                     <strong>🚀 点击前往 Grok 聊天页面 🚀</strong>
                 </a>
             </div>
@@ -288,17 +257,13 @@
         <main class="container">
             <div class="main-content">
                 <div class="accounts-section">
-                    <h2>账户管理</h2>
+                    <h2>选择账户</h2>
                     <div id="accounts-container"></div>
-                    <button id="add-account">添加新账户</button>
+                    <p><a href="#" class="help-link" onclick="openHelpPanel(event)">如何获取Cookie?</a></p>
                 </div>
                 <div class="selected-section">
                     <h2>当前选中的账户</h2>
                     <div id="selected-account-info">未选择任何账户</div>
-                </div>
-                <div class="tips-section">
-                    <h2>提示</h2>
-                    <p><a href="#" class="help-link" onclick="openHelpPanel(event)">如何获取Cookie?</a></p>
                 </div>
             </div>
         </main>
@@ -324,86 +289,58 @@
                         <li>复制整个Cookie值并粘贴到文本框中</li>
                         <li>不要登出账户，如果需要多个Cookie请用无痕模式</li>
                     </ol>
-                </div>
-                <div class="image-container">
-                    <img src="how_to_get_cookie.png" class="help-image">
+                    <div class="image-container">
+                        <img src="/how_to_get_cookie.png" class="help-image" alt="如何获取Cookie">
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function getCookie(name) {
-            var cookie = document.cookie;
-            var parts = cookie.split(';');
-            for (var i = 0; i < parts.length; i++) {
-                var pair = parts[i].trim().split('=');
-                if (pair[0] == name) {
-                    return pair[1];
-                }
-            }
-            return null;
+        let users = [];
+        let selectedUserId = null;
+
+        // Base64 解码
+        function decodeBase64(str) {
+            return atob(str);
         }
 
-        function setCookie(name, value, expirationDays) {
-            var expirationDate = new Date();
-            expirationDate.setDate(expirationDate.getDate() + expirationDays);
-            var cookieString = name + "=" + value + "; expires=" + expirationDate.toUTCString() + "; path=/";
-            document.cookie = cookieString;
+        // 加载用户数据
+        async function loadUsers() {
+            try {
+                const response = await fetch('/users.json');
+                if (!response.ok) throw new Error('Failed to fetch users.json');
+                const data = await response.json();
+                console.log('Loaded data:', data);
+                return {
+                    password: decodeBase64(data.password),
+                    users: data.users.map(user => ({
+                        id: user.username,
+                        username: decodeBase64(user.username),
+                        cookie: decodeBase64(user.cookie)
+                    }))
+                };
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('加载用户数据失败，请检查 users.json');
+            }
         }
 
-        window.onload = function() {
-            var passwordVerified = getCookie('passwordVerified');
-            if (passwordVerified == 'true') {
-                document.getElementById('main-content-section').style.display = 'block';
-                document.getElementById('password-section').style.display = 'none';
-            } else {
-                document.getElementById('password-section').style.display = 'block';
-                document.getElementById('main-content-section').style.display = 'none';
-            }
-
-            document.getElementById('submit-password').addEventListener('click', function() {
-                var password = document.getElementById('password-input').value;
-                if (password == '123') {
-                    setCookie('passwordVerified', 'true', 1);
-                    document.getElementById('password-section').style.display = 'none';
-                    document.getElementById('main-content-section').style.display = 'block';
-                } else {
-                    document.getElementById('error-message').style.display = 'block';
-                }
-            });
-        };
-
-        let accounts = [];
-        let selectedAccountId = null;
-
+        // 设置 Grok 链接
         function setGrokLink() {
             const grokLink = document.getElementById('grok-link');
-            grokLink.href = window.location.origin + '/grok';
+            grokLink.href = '/grok'; // 直接使用相对路径，与服务器一致
         }
 
-        function loadAccounts() {
-            const savedAccounts = localStorage.getItem('cookieAccounts');
-            if (savedAccounts) {
-                accounts = JSON.parse(savedAccounts);
-            }
-            selectedAccountId = localStorage.getItem('selectedAccountId');
-            renderAccounts();
-            updateSelectedAccountDiv();
-        }
-
-        function saveAccounts() {
-            localStorage.setItem('cookieAccounts', JSON.stringify(accounts));
-        }
-
+        // 渲染账户列表
         function renderAccounts() {
             const container = document.getElementById('accounts-container');
             container.innerHTML = '';
-
-            accounts.forEach((account, index) => {
+            users.forEach(user => {
                 const accountDiv = document.createElement('div');
                 accountDiv.className = 'account';
-                if (account.id === selectedAccountId) {
+                if (user.id === selectedUserId) {
                     accountDiv.classList.add('selected');
                 }
 
@@ -413,120 +350,75 @@
                 const radio = document.createElement('input');
                 radio.type = 'radio';
                 radio.name = 'account';
-                radio.id = `account-${account.id}`;
-                radio.checked = account.id === selectedAccountId;
-                radio.addEventListener('change', () => selectAccount(account.id));
+                radio.id = `account-${user.id}`;
+                radio.checked = user.id === selectedUserId;
+                radio.addEventListener('change', () => selectUser(user.id));
 
                 const label = document.createElement('label');
-                label.htmlFor = `account-${account.id}`;
-                label.textContent = account.remark || `账户 ${index + 1}`;
+                label.htmlFor = `account-${user.id}`;
+                label.textContent = user.username;
 
                 radioContainer.appendChild(radio);
                 radioContainer.appendChild(label);
-
-                const remarkInput = document.createElement('input');
-                remarkInput.type = 'text';
-                remarkInput.className = 'remark-input';
-                remarkInput.placeholder = '输入备注名称...';
-                remarkInput.value = account.remark || '';
-                remarkInput.addEventListener('input', () => {
-                    account.remark = remarkInput.value;
-                    label.textContent = account.remark || `账户 ${index + 1}`;
-                    saveAccounts();
-                    if (account.id === selectedAccountId) {
-                        updateSelectedAccountDiv();
-                    }
-                });
-
-                const textarea = document.createElement('textarea');
-                textarea.placeholder = '在此粘贴Cookie字符串...';
-                textarea.value = account.cookie || '';
-                textarea.id = `cookie-${account.id}`;
-                textarea.addEventListener('input', () => {
-                    account.cookie = textarea.value;
-                    saveAccounts();
-                    if (account.id === selectedAccountId) {
-                        document.cookie = `grok_cookie=${encodeURIComponent(account.cookie)}; path=/; max-age=31536000`;
-                    }
-                });
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.textContent = '删除';
-                deleteBtn.addEventListener('click', () => deleteAccount(account.id));
-
                 accountDiv.appendChild(radioContainer);
-                accountDiv.appendChild(remarkInput);
-                accountDiv.appendChild(textarea);
-                accountDiv.appendChild(deleteBtn);
-
                 container.appendChild(accountDiv);
             });
         }
 
-        function addAccount() {
-            const newId = Date.now().toString();
-            accounts.push({ id: newId, cookie: '', remark: '' });
-            saveAccounts();
-            renderAccounts();
-        }
-
-        function deleteAccount(id) {
-            if (confirm('确定要删除此账户吗？')) {
-                accounts = accounts.filter(account => account.id !== id);
-                if (selectedAccountId === id) {
-                    selectedAccountId = null;
-                    localStorage.removeItem('selectedAccountId');
-                    updateSelectedAccountDiv();
-                }
-                saveAccounts();
-                renderAccounts();
+        // 选择用户
+        function selectUser(id) {
+            selectedUserId = id;
+            const selectedUser = users.find(user => user.id === id);
+            if (selectedUser) {
+                document.cookie = `grok_cookie=${encodeURIComponent(selectedUser.cookie)}; path=/; max-age=31536000`;
+                console.log('Cookie set:', document.cookie);
+                updateSelectedAccountDiv();
             }
         }
 
-        function selectAccount(id) {
-            selectedAccountId = id;
-            localStorage.setItem('selectedAccountId', id);
-            const selectedAccount = accounts.find(account => account.id === id);
-            if (selectedAccount) {
-                document.cookie = `grok_cookie=${encodeURIComponent(selectedAccount.cookie)}; path=/; max-age=31536000`;
-            }
-            renderAccounts();
-            updateSelectedAccountDiv();
-        }
-
+        // 更新选中账户显示
         function updateSelectedAccountDiv() {
             const infoDiv = document.getElementById('selected-account-info');
-            if (!selectedAccountId) {
+            if (!selectedUserId) {
                 infoDiv.textContent = '未选择任何账户';
                 return;
             }
-            const selectedAccount = accounts.find(account => account.id === selectedAccountId);
-            if (!selectedAccount) {
-                infoDiv.textContent = '所选账户不存在';
-                return;
-            }
-            const accountIndex = accounts.findIndex(account => account.id === selectedAccountId);
-            infoDiv.textContent = selectedAccount.remark || `账户 ${accountIndex + 1}`;
+            const selectedUser = users.find(user => user.id === selectedUserId);
+            infoDiv.textContent = selectedUser.username;
         }
 
+        // 打开帮助面板
         function openHelpPanel(event) {
             event.preventDefault();
             document.getElementById('help-panel').style.display = 'flex';
         }
 
+        // 关闭帮助面板
         function closeHelpPanel() {
             document.getElementById('help-panel').style.display = 'none';
         }
 
-        document.getElementById('add-account').addEventListener('click', addAccount);
-
-        window.addEventListener('load', () => {
-            loadAccounts();
-            setGrokLink();
-            if (!selectedAccountId && accounts.length > 0) {
-                selectAccount(accounts[0].id);
+        // 密码验证
+        document.getElementById('submit-password').addEventListener('click', async () => {
+            const password = document.getElementById('password-input').value;
+            const data = await loadUsers();
+            if (data && data.password === password) {
+                users = data.users;
+                console.log('Users loaded:', users);
+                document.getElementById('password-section').style.display = 'none';
+                document.getElementById('main-content-section').style.display = 'block';
+                renderAccounts();
+                if (users.length > 0) {
+                    selectUser(users[0].id);
+                }
+            } else {
+                document.getElementById('error-message').style.display = 'block';
             }
+        });
+
+        // 初始化
+        window.addEventListener('load', () => {
+            setGrokLink();
         });
     </script>
 </body>

@@ -1,35 +1,34 @@
 import { handleGrokRequest } from "./handle_grok.js";
 
-
 async function handleRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
+  const filePath = url.pathname;
   console.log('Request URL:', req.url);
 
-  // 处理主页面
-  const filePath = url.pathname;
-  console.log('filePath:', filePath);
+  // 处理静态文件
   if (filePath === '/' || filePath === '/index.html') {
-      const fullPath = `${Deno.cwd()}/src/static/index.html`;
-      const file = await Deno.readFile(fullPath);
-      return new Response(file, {
-        headers: {
-          'content-type': `text/html;charset=UTF-8`,
-        },
-      });
+    const file = await Deno.readFile("./src/static/index.html");
+    return new Response(file, {
+      headers: { "content-type": "text/html;charset=UTF-8" },
+    });
+  }
+
+  if (filePath === '/users.json') {
+    const file = await Deno.readFile("./src/static/users.json");
+    return new Response(file, {
+      headers: { "content-type": "application/json;charset=UTF-8" },
+    });
   }
 
   if (filePath === '/how_to_get_cookie.png') {
-    const fullPath = `${Deno.cwd()}/src/static/how_to_get_cookie.png`;
-    const file = await Deno.readFile(fullPath);
+    const file = await Deno.readFile("./src/static/how_to_get_cookie.png");
     return new Response(file, {
-      headers: {
-      },
+      headers: { "content-type": "image/png" },
     });
-}
-  
-  //处理grok请求
+  }
+
+  // 处理 Grok 和其他请求
   return handleGrokRequest(req);
+}
 
-};
-
-Deno.serve({ port: 80 },handleRequest); 
+Deno.serve({ port: 80 }, handleRequest);

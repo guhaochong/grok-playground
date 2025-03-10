@@ -1,5 +1,0 @@
-{
-    "tasks": {
-      "start": "deno run --allow-env --allow-net --watch --allow-read src/deno_index.ts"
-    }
-}
